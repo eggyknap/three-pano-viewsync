@@ -1,0 +1,3 @@
+[submodule "ViewSyncEffect"]
+	path = ViewSyncEffect
+	url = git@github.com:eggyknap/ViewSyncEffect
