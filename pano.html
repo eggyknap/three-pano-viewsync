@@ -30,18 +30,16 @@
     <body>
 
         <div id="container"></div>
-        <div id="info">
-            <a href="http://threejs.org" target="_blank">three.js webgl</a> - equirectangular panorama demo. photo by <a href="http://www.flickr.com/photos/jonragnarsson/2294472375/" target="_blank">Jón Ragnarsson</a>.<br />
-            drag equirectangular texture into the page.
-        </div>
+        <div id="info"></div>
 
+        <!-- XXX Need some config system <script src="/is.config.js"></script> -->
         <script src="lib/three.min.js"></script>
         <script src="lib/socket.io.js"></script>
         <script src="ViewSyncEffect/ViewSyncEffect.js"></script>
 
         <script>
 
-            var camera, scene, renderer, viewSyncEffect;
+            var camera, scene, renderer, viewSyncEffect, material, pano_url, videoTexture;
 
             var isUserInteracting = false,
             onMouseDownMouseX = 0, onMouseDownMouseY = 0,
@@ -49,8 +47,18 @@
             lat = 0, onMouseDownLat = 0,
             phi = 0, theta = 0;
 
+            pano_url = 'textures/nothing-loaded.png';
             init();
             animate();
+
+            // XXX Need different config system
+            function getISConfig(key, def) {
+                if (IS.Configuration.hasOwnProperty(key)) {
+                    return IS.Configuration[key];
+                } else {
+                    return def;
+                }
+            }
 
             function init() {
 
@@ -66,8 +74,8 @@
                 var geometry = new THREE.SphereGeometry( 500, 60, 40 );
                 geometry.applyMatrix( new THREE.Matrix4().makeScale( -1, 1, 1 ) );
 
-                var material = new THREE.MeshBasicMaterial( {
-                    map: THREE.ImageUtils.loadTexture( 'textures/2294472375_24a3b8ef46_o.jpg' )
+                material = new THREE.MeshBasicMaterial( {
+                    map: THREE.ImageUtils.loadTexture( pano_url )
                 } );
 
                 mesh = new THREE.Mesh( geometry, material );
