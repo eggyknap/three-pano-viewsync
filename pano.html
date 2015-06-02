@@ -53,20 +53,22 @@
 
             // XXX Need different config system
             function getISConfig(key, def) {
-                if (IS.Configuration.hasOwnProperty(key)) {
-                    return IS.Configuration[key];
-                } else {
+//                if (IS.Configuration.hasOwnProperty(key)) {
+//                    return IS.Configuration[key];
+//                } else {
                     return def;
-                }
+//                }
             }
 
             function init() {
 
-                var container, mesh;
+                var container, mesh, vertFov;
+                var config;
 
                 container = document.getElementById( 'container' );
 
-                camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 1, 1100 );
+                vertFov = getISConfig('space.activity.panoviewer.vertFov', 75);
+                camera = new THREE.PerspectiveCamera( vertFov, window.innerWidth / window.innerHeight, 1, 1100 );
                 camera.target = new THREE.Vector3( 0, 0, 0 );
 
                 scene = new THREE.Scene();
@@ -88,56 +90,79 @@
                 container.appendChild( renderer.domElement );
 
                 viewSyncEffect = new THREE.ViewSyncEffect( renderer );
+                viewSyncEffect.configure( {
+                    slave: getISConfig('space.activity.panoviewer.slave', false),
+                    pitch: getISConfig('space.activity.panoviewer.pitch', 0.0) * 1.0,
+                     roll: getISConfig('space.activity.panoviewer.roll',  0.0) * 1.0,
+                      yaw: getISConfig('space.activity.panoviewer.yaw',   0.0) * 1.0
+                });
                 viewSyncEffect.setSize( window.innerWidth, window.innerHeight );
+
+                viewSyncEffect.setExtraCallback( extraVSCallback );
+                viewSyncEffect.setNavigationCallback( navigationCallback );
 
                 document.addEventListener( 'mousedown', onDocumentMouseDown, false );
                 document.addEventListener( 'mousemove', onDocumentMouseMove, false );
                 document.addEventListener( 'mouseup', onDocumentMouseUp, false );
-                document.addEventListener( 'mousewheel', onDocumentMouseWheel, false );
-                document.addEventListener( 'DOMMouseScroll', onDocumentMouseWheel, false);
 
                 //
 
-                document.addEventListener( 'dragover', function ( event ) {
-
-                    event.preventDefault();
-                    event.dataTransfer.dropEffect = 'copy';
-
-                }, false );
-
-                document.addEventListener( 'dragenter', function ( event ) {
-
-                    document.body.style.opacity = 0.5;
-
-                }, false );
-
-                document.addEventListener( 'dragleave', function ( event ) {
-
-                    document.body.style.opacity = 1;
-
-                }, false );
-
-                document.addEventListener( 'drop', function ( event ) {
-
-                    event.preventDefault();
-
-                    var reader = new FileReader();
-                    reader.addEventListener( 'load', function ( event ) {
-
-                        material.map.image.src = event.target.result;
-                        material.map.needsUpdate = true;
-
-                    }, false );
-                    reader.readAsDataURL( event.dataTransfer.files[ 0 ] );
-
-                    document.body.style.opacity = 1;
-
-                }, false );
-
-                //
 
                 window.addEventListener( 'resize', onWindowResize, false );
 
+            }
+
+            function navigationCallback(navdata) {
+                if (navdata.data.hasOwnProperty('roll')) {
+                    lat += navdata.data.roll * 1.0;
+                }
+                if (navdata.data.hasOwnProperty('yaw')) {
+                    lon += navdata.data.yaw * 1.0;
+                }
+            }
+
+            function loadNewTexture(url, type) {
+                var texture;
+
+                document.getElementById('info').innerText = 'Loading image...';
+                console.log("Loading texture " + url + " of type " + type);
+                var proxyUrl = "http://" + window.location.host + "/proxy?query=" + url;
+                if (type === 'video') {
+                    videoTexture = new THREEx.VideoTexture(url);
+                    //videoTexture = new THREEx.VideoTexture(proxyUrl);
+                    texture = videoTexture.texture;
+                    texture.needsUpdate = true;
+                }
+                else {
+                    var canvas = document.createElement('canvas');
+                    videoTexture = undefined;
+                    canvas.style.position = 'absolute';
+                    canvas.style.top = '0';
+                    canvas.style.left = '0';
+                    texture = new THREE.Texture(canvas);
+
+                    var img = new Image();
+                    img.crossOrigin = 'anonymous';
+                    img.onload = function() {
+                        canvas.width = img.width;
+                        canvas.height = img.height;
+                        var context = canvas.getContext('2d');
+                        context.drawImage(img, 0, 0);
+                        texture.needsUpdate = true;
+                        document.getElementById('info').innerText = '';
+                    };
+                    img.src = url;
+                    //img.src = proxyUrl;
+                }
+                return texture;
+            }
+
+            function extraVSCallback(data) {
+                if (data.type === 'pano' && data.fileurl !== pano_url) {
+                    material.map = loadNewTexture(data.fileurl, data.filetype);
+                    material.map.needsUpdate = true;
+                    pano_url = data.fileurl;
+                }
             }
 
             function onWindowResize() {
@@ -180,7 +205,7 @@
 
             }
 
-            function onDocumentMouseWheel( event ) {
+/*            function onDocumentMouseWheel( event ) {
 
                 // WebKit
 
@@ -204,7 +229,7 @@
 
                 camera.updateProjectionMatrix();
 
-            }
+            } */
 
             function animate(nowMsec) {
 
@@ -232,13 +257,6 @@
 
                     camera.lookAt( camera.target );
                 }
-
-                /*
-                // distortion
-                camera.position.copy( camera.target ).negate();
-                */
-
-                //renderer.render( scene, camera );
             }
 
         </script>
