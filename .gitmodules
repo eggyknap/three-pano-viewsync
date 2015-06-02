@@ -1,0 +1,3 @@
+[submodule "newer_viewsynceffect"]
+	path = ViewSyncEffect
+	url = git@github.com:EndPointCorp/ViewSyncEffect
