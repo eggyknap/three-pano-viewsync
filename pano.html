@@ -49,7 +49,7 @@
 
             pano_url = 'textures/nothing-loaded.png';
             init();
-            animate();
+            animate(0);
 
             // XXX Need different config system
             function getISConfig(key, def) {
@@ -206,20 +206,19 @@
 
             }
 
-            function animate() {
+            function animate(nowMsec) {
 
                 requestAnimationFrame( animate );
-                update();
+                update(nowMsec);
 
             }
 
-            function update() {
+            function update(nowMsec) {
 
-                //if ( isUserInteracting === false ) {
-
-                //    lon += 0.1;
-
-                //}
+                viewSyncEffect.extraInfo({'type': 'pano', 'fileurl' : pano_url});
+                if (typeof(videoTexture) !== 'undefined') {
+                    videoTexture.update(.2, nowMsec - 100 / 6);
+                }
                 viewSyncEffect.render( scene, camera );
 
                 if (! viewSyncEffect.isSlave()) {
