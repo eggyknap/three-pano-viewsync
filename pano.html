@@ -1,217 +1,217 @@
 <!DOCTYPE html>
 <html lang="en">
-	<head>
-		<title>three.js webgl - equirectangular panorama demo</title>
-		<meta charset="utf-8">
-		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
-		<style>
-			body {
-				background-color: #000000;
-				margin: 0px;
-				overflow: hidden;
-			}
+    <head>
+        <title>three.js webgl - equirectangular panorama demo</title>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+        <style>
+            body {
+                background-color: #000000;
+                margin: 0px;
+                overflow: hidden;
+            }
 
-			#info {
-				position: absolute;
-				top: 0px; width: 100%;
-				color: #ffffff;
-				padding: 5px;
-				font-family:Monospace;
-				font-size:13px;
-				font-weight: bold;
-				text-align:center;
-			}
+            #info {
+                position: absolute;
+                top: 0px; width: 100%;
+                color: #ffffff;
+                padding: 5px;
+                font-family:Monospace;
+                font-size:13px;
+                font-weight: bold;
+                text-align:center;
+            }
 
-			a {
-				color: #ffffff;
-			}
-		</style>
-	</head>
-	<body>
+            a {
+                color: #ffffff;
+            }
+        </style>
+    </head>
+    <body>
 
-		<div id="container"></div>
-		<div id="info">
-			<a href="http://threejs.org" target="_blank">three.js webgl</a> - equirectangular panorama demo. photo by <a href="http://www.flickr.com/photos/jonragnarsson/2294472375/" target="_blank">Jón Ragnarsson</a>.<br />
-			drag equirectangular texture into the page.
-		</div>
+        <div id="container"></div>
+        <div id="info">
+            <a href="http://threejs.org" target="_blank">three.js webgl</a> - equirectangular panorama demo. photo by <a href="http://www.flickr.com/photos/jonragnarsson/2294472375/" target="_blank">Jón Ragnarsson</a>.<br />
+            drag equirectangular texture into the page.
+        </div>
 
-		<script src="lib/three.min.js"></script>
+        <script src="lib/three.min.js"></script>
         <script src="lib/socket.io.js"></script>
-	    <script src="ViewSyncEffect/ViewSyncEffect.js"></script>
+        <script src="ViewSyncEffect/ViewSyncEffect.js"></script>
 
-		<script>
+        <script>
 
-			var camera, scene, renderer, viewSyncEffect;
+            var camera, scene, renderer, viewSyncEffect;
 
-			var isUserInteracting = false,
-			onMouseDownMouseX = 0, onMouseDownMouseY = 0,
-			lon = 0, onMouseDownLon = 0,
-			lat = 0, onMouseDownLat = 0,
-			phi = 0, theta = 0;
+            var isUserInteracting = false,
+            onMouseDownMouseX = 0, onMouseDownMouseY = 0,
+            lon = 0, onMouseDownLon = 0,
+            lat = 0, onMouseDownLat = 0,
+            phi = 0, theta = 0;
 
-			init();
-			animate();
+            init();
+            animate();
 
-			function init() {
+            function init() {
 
-				var container, mesh;
+                var container, mesh;
 
-				container = document.getElementById( 'container' );
+                container = document.getElementById( 'container' );
 
-				camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 1, 1100 );
-				camera.target = new THREE.Vector3( 0, 0, 0 );
+                camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 1, 1100 );
+                camera.target = new THREE.Vector3( 0, 0, 0 );
 
-				scene = new THREE.Scene();
+                scene = new THREE.Scene();
 
-				var geometry = new THREE.SphereGeometry( 500, 60, 40 );
-				geometry.applyMatrix( new THREE.Matrix4().makeScale( -1, 1, 1 ) );
+                var geometry = new THREE.SphereGeometry( 500, 60, 40 );
+                geometry.applyMatrix( new THREE.Matrix4().makeScale( -1, 1, 1 ) );
 
-				var material = new THREE.MeshBasicMaterial( {
-					map: THREE.ImageUtils.loadTexture( 'textures/2294472375_24a3b8ef46_o.jpg' )
-				} );
+                var material = new THREE.MeshBasicMaterial( {
+                    map: THREE.ImageUtils.loadTexture( 'textures/2294472375_24a3b8ef46_o.jpg' )
+                } );
 
-				mesh = new THREE.Mesh( geometry, material );
-				
-				scene.add( mesh );
+                mesh = new THREE.Mesh( geometry, material );
+                
+                scene.add( mesh );
 
-				renderer = new THREE.WebGLRenderer();
-				renderer.setPixelRatio( window.devicePixelRatio );
-				renderer.setSize( window.innerWidth, window.innerHeight );
-				container.appendChild( renderer.domElement );
+                renderer = new THREE.WebGLRenderer();
+                renderer.setPixelRatio( window.devicePixelRatio );
+                renderer.setSize( window.innerWidth, window.innerHeight );
+                container.appendChild( renderer.domElement );
 
-			    viewSyncEffect = new THREE.ViewSyncEffect( renderer );
-			    viewSyncEffect.setSize( window.innerWidth, window.innerHeight );
+                viewSyncEffect = new THREE.ViewSyncEffect( renderer );
+                viewSyncEffect.setSize( window.innerWidth, window.innerHeight );
 
-				document.addEventListener( 'mousedown', onDocumentMouseDown, false );
-				document.addEventListener( 'mousemove', onDocumentMouseMove, false );
-				document.addEventListener( 'mouseup', onDocumentMouseUp, false );
-				document.addEventListener( 'mousewheel', onDocumentMouseWheel, false );
-				document.addEventListener( 'DOMMouseScroll', onDocumentMouseWheel, false);
+                document.addEventListener( 'mousedown', onDocumentMouseDown, false );
+                document.addEventListener( 'mousemove', onDocumentMouseMove, false );
+                document.addEventListener( 'mouseup', onDocumentMouseUp, false );
+                document.addEventListener( 'mousewheel', onDocumentMouseWheel, false );
+                document.addEventListener( 'DOMMouseScroll', onDocumentMouseWheel, false);
 
-				//
+                //
 
-				document.addEventListener( 'dragover', function ( event ) {
+                document.addEventListener( 'dragover', function ( event ) {
 
-					event.preventDefault();
-					event.dataTransfer.dropEffect = 'copy';
+                    event.preventDefault();
+                    event.dataTransfer.dropEffect = 'copy';
 
-				}, false );
+                }, false );
 
-				document.addEventListener( 'dragenter', function ( event ) {
+                document.addEventListener( 'dragenter', function ( event ) {
 
-					document.body.style.opacity = 0.5;
+                    document.body.style.opacity = 0.5;
 
-				}, false );
+                }, false );
 
-				document.addEventListener( 'dragleave', function ( event ) {
+                document.addEventListener( 'dragleave', function ( event ) {
 
-					document.body.style.opacity = 1;
+                    document.body.style.opacity = 1;
 
-				}, false );
+                }, false );
 
-				document.addEventListener( 'drop', function ( event ) {
+                document.addEventListener( 'drop', function ( event ) {
 
-					event.preventDefault();
+                    event.preventDefault();
 
-					var reader = new FileReader();
-					reader.addEventListener( 'load', function ( event ) {
+                    var reader = new FileReader();
+                    reader.addEventListener( 'load', function ( event ) {
 
-						material.map.image.src = event.target.result;
-						material.map.needsUpdate = true;
+                        material.map.image.src = event.target.result;
+                        material.map.needsUpdate = true;
 
-					}, false );
-					reader.readAsDataURL( event.dataTransfer.files[ 0 ] );
+                    }, false );
+                    reader.readAsDataURL( event.dataTransfer.files[ 0 ] );
 
-					document.body.style.opacity = 1;
+                    document.body.style.opacity = 1;
 
-				}, false );
+                }, false );
 
-				//
+                //
 
-				window.addEventListener( 'resize', onWindowResize, false );
+                window.addEventListener( 'resize', onWindowResize, false );
 
-			}
+            }
 
-			function onWindowResize() {
+            function onWindowResize() {
 
-				camera.aspect = window.innerWidth / window.innerHeight;
-				camera.updateProjectionMatrix();
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
 
-				renderer.setSize( window.innerWidth, window.innerHeight );
+                renderer.setSize( window.innerWidth, window.innerHeight );
 
-			}
+            }
 
-			function onDocumentMouseDown( event ) {
+            function onDocumentMouseDown( event ) {
 
-				event.preventDefault();
+                event.preventDefault();
 
-				isUserInteracting = true;
+                isUserInteracting = true;
 
-				onPointerDownPointerX = event.clientX;
-				onPointerDownPointerY = event.clientY;
+                onPointerDownPointerX = event.clientX;
+                onPointerDownPointerY = event.clientY;
 
-				onPointerDownLon = lon;
-				onPointerDownLat = lat;
+                onPointerDownLon = lon;
+                onPointerDownLat = lat;
 
-			}
+            }
 
-			function onDocumentMouseMove( event ) {
+            function onDocumentMouseMove( event ) {
 
-				if ( isUserInteracting === true ) {
+                if ( isUserInteracting === true ) {
 
-					lon = ( onPointerDownPointerX - event.clientX ) * 0.1 + onPointerDownLon;
-					lat = ( event.clientY - onPointerDownPointerY ) * 0.1 + onPointerDownLat;
+                    lon = ( onPointerDownPointerX - event.clientX ) * 0.1 + onPointerDownLon;
+                    lat = ( event.clientY - onPointerDownPointerY ) * 0.1 + onPointerDownLat;
 
-				}
+                }
 
-			}
+            }
 
-			function onDocumentMouseUp( event ) {
+            function onDocumentMouseUp( event ) {
 
-				isUserInteracting = false;
+                isUserInteracting = false;
 
-			}
+            }
 
-			function onDocumentMouseWheel( event ) {
+            function onDocumentMouseWheel( event ) {
 
-				// WebKit
+                // WebKit
 
-				if ( event.wheelDeltaY ) {
+                if ( event.wheelDeltaY ) {
 
-					camera.fov -= event.wheelDeltaY * 0.05;
+                    camera.fov -= event.wheelDeltaY * 0.05;
 
-				// Opera / Explorer 9
+                // Opera / Explorer 9
 
-				} else if ( event.wheelDelta ) {
+                } else if ( event.wheelDelta ) {
 
-					camera.fov -= event.wheelDelta * 0.05;
+                    camera.fov -= event.wheelDelta * 0.05;
 
-				// Firefox
+                // Firefox
 
-				} else if ( event.detail ) {
+                } else if ( event.detail ) {
 
-					camera.fov += event.detail * 1.0;
+                    camera.fov += event.detail * 1.0;
 
-				}
+                }
 
-				camera.updateProjectionMatrix();
+                camera.updateProjectionMatrix();
 
-			}
+            }
 
-			function animate() {
+            function animate() {
 
-				requestAnimationFrame( animate );
-				update();
+                requestAnimationFrame( animate );
+                update();
 
-			}
+            }
 
-			function update() {
+            function update() {
 
-				//if ( isUserInteracting === false ) {
+                //if ( isUserInteracting === false ) {
 
-				//	lon += 0.1;
+                //    lon += 0.1;
 
-				//}
+                //}
                 viewSyncEffect.render( scene, camera );
 
                 if (! viewSyncEffect.isSlave()) {
@@ -226,14 +226,14 @@
                     camera.lookAt( camera.target );
                 }
 
-				/*
-				// distortion
-				camera.position.copy( camera.target ).negate();
-				*/
+                /*
+                // distortion
+                camera.position.copy( camera.target ).negate();
+                */
 
-				//renderer.render( scene, camera );
-			}
+                //renderer.render( scene, camera );
+            }
 
-		</script>
-	</body>
+        </script>
+    </body>
 </html>
